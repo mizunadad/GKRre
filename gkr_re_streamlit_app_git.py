@@ -106,14 +106,60 @@ st.sidebar.caption(f"Calibration: {selected_mode}")
 st.title(f"🌌 {selected_mode}")
 st.markdown(f"> **観測シナリオ:** {MODES[selected_mode]['scenario']}")
 
-# スタイル適用
+# スタイル適用（視認性向上版）
 st.markdown("""
     <style>
-    .stApp { background-color: #050505; color: #d1d5db; }
-    .stTextArea textarea { background-color: #111111 !important; color: #10b981 !important; border-radius: 12px !important; }
-    .stButton button { background-color: #064e3b !important; color: #ffffff !important; border-radius: 12px !important; width: 100% !important; font-weight: bold; }
-    .prophecy-box { background-color: #0a1a14; border-left: 6px solid #10b981; padding: 25px; border-radius: 12px; line-height: 1.8; }
-    .visual-prompt-box { background-color: #000; border: 1px dashed #34d399; padding: 15px; color: #34d399; font-family: monospace; font-size: 0.85rem; }
+    /* 全体背景：漆黒から深みのあるダークグレーへ */
+    .stApp { background-color: #0d1117; color: #c9d1d9; }
+    
+    /* サイドバー */
+    section[data-testid="stSidebar"] { background-color: #161b22 !important; }
+
+    /* テキストエリア：背景との境界をはっきりさせ、文字色を明るく */
+    .stTextArea textarea { 
+        background-color: #0d1117 !important; 
+        color: #58a6ff !important; 
+        border: 1px solid #30363d !important; 
+        border-radius: 12px !important;
+        font-size: 16px !important;
+    }
+    
+    /* ボタン：エメラルドの輝度を上げ、視認性を確保 */
+    .stButton button { 
+        background-color: #238636 !important; 
+        color: #ffffff !important; 
+        border: 1px solid rgba(240,246,252,0.1) !important;
+        border-radius: 12px !important; 
+        width: 100% !important; 
+        font-weight: bold !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+    .stButton button:hover {
+        background-color: #2ea043 !important;
+        border-color: #3fb950 !important;
+    }
+
+    /* 予言ボックス：カードスタイルで浮かび上がらせる */
+    .prophecy-box { 
+        background-color: #161b22; 
+        border: 1px solid #30363d;
+        border-left: 6px solid #2ea043; 
+        padding: 25px; 
+        border-radius: 12px; 
+        color: #f0f6fc;
+        line-height: 1.8;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+
+    /* プロンプトボックス：コード風に */
+    .visual-prompt-box {
+        background-color: #010409;
+        border: 1px dashed #444c56;
+        padding: 15px;
+        color: #79c0ff;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.85rem;
+    }
     </style>
     """, unsafe_allow_html=True)
 
