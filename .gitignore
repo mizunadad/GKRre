@@ -3,5 +3,6 @@
 pycache/
 *.py[cod]
 gkr_re_streamlit_app.py
+run_GKRre_episode2.py
 so_pyenv.csh
 debug/
