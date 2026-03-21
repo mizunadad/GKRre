@@ -106,25 +106,38 @@ st.sidebar.caption(f"Calibration: {selected_mode}")
 st.title(f"🌌 {selected_mode}")
 st.markdown(f"> **観測シナリオ:** {MODES[selected_mode]['scenario']}")
 
-# スタイル適用（視認性向上版）
+# スタイル適用（視認性向上・コントラスト改善版）
 st.markdown("""
     <style>
-    /* 全体背景：漆黒から深みのあるダークグレーへ */
-    .stApp { background-color: #0d1117; color: #c9d1d9; }
+    /* 全体背景：GitHubダークモード準拠 */
+    .stApp { background-color: #0d1117; color: #e6edf3; }
     
     /* サイドバー */
     section[data-testid="stSidebar"] { background-color: #161b22 !important; }
 
-    /* テキストエリア：背景との境界をはっきりさせ、文字色を明るく */
+    /* ラベル文字の視認性向上 */
+    label, .stMarkdown p { 
+        color: #e6edf3 !important; 
+        font-weight: 500 !important;
+    }
+
+    /* テキストエリア：背景と文字のコントラストを最大化 */
     .stTextArea textarea { 
-        background-color: #0d1117 !important; 
-        color: #58a6ff !important; 
-        border: 1px solid #30363d !important; 
+        background-color: #1c2128 !important; 
+        color: #ffffff !important; 
+        border: 1px solid #444c56 !important; 
         border-radius: 12px !important;
         font-size: 16px !important;
+        padding: 15px !important;
     }
     
-    /* ボタン：エメラルドの輝度を上げ、視認性を確保 */
+    /* プレースホルダー（記載例）の色を明るく設定 */
+    .stTextArea textarea::placeholder {
+        color: #8b949e !important;
+        opacity: 1;
+    }
+    
+    /* ボタン：視認性の高いグリーン */
     .stButton button { 
         background-color: #238636 !important; 
         color: #ffffff !important; 
@@ -132,6 +145,7 @@ st.markdown("""
         border-radius: 12px !important; 
         width: 100% !important; 
         font-weight: bold !important;
+        height: 3rem !important;
         box-shadow: 0 4px 12px rgba(0,0,0,0.5);
     }
     .stButton button:hover {
@@ -139,7 +153,7 @@ st.markdown("""
         border-color: #3fb950 !important;
     }
 
-    /* 予言ボックス：カードスタイルで浮かび上がらせる */
+    /* 予言ボックス */
     .prophecy-box { 
         background-color: #161b22; 
         border: 1px solid #30363d;
@@ -151,14 +165,15 @@ st.markdown("""
         box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     }
 
-    /* プロンプトボックス：コード風に */
+    /* プロンプトボックス：スカイブルーで読みやすく */
     .visual-prompt-box {
-        background-color: #010409;
-        border: 1px dashed #444c56;
+        background-color: #0d1117;
+        border: 1px dashed #58a6ff;
         padding: 15px;
-        color: #79c0ff;
+        color: #58a6ff;
         font-family: 'JetBrains Mono', monospace;
         font-size: 0.85rem;
+        border-radius: 8px;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -168,7 +183,7 @@ if 'messages' not in st.session_state: st.session_state.messages = []
 if 'tool_call' not in st.session_state: st.session_state.tool_call = None
 if 'final_output' not in st.session_state: st.session_state.final_output = ""
 
-user_input = st.text_area("燃料注入:", placeholder=MODES[selected_mode]['example'], height=120)
+user_input = st.text_area("燃料注入:", placeholder=MODES[selected_mode]['example'], height=150)
 
 if st.button("観測シーケンス開始") and user_input:
     st.session_state.messages = [
