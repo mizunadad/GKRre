@@ -9,8 +9,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # セキュリティ：アクセス制限用のパスワード
-# Streamlit Cloud の Secrets に SITE_PASSWORD を設定することを推奨
-ADMIN_PASSWORD = st.secrets.get("SITE_PASSWORD", "3194731222k")
+# GitHub上での露出を防ぐため、デフォルト値は設定せず、Streamlit CloudのSecretsからのみ取得します。
+ADMIN_PASSWORD = st.secrets.get("SITE_PASSWORD")
 
 # ページ設定
 st.set_page_config(
@@ -22,6 +22,12 @@ st.set_page_config(
 # --- ログイン機能 (認証) ---
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
+
+# パスワードがSecretsに設定されていない場合の警告（開発者向け）
+if ADMIN_PASSWORD is None:
+    st.error("🔒 Security Error: SITE_PASSWORD が Streamlit Secrets に設定されていません。GitHubに公開するコードにパスワードを直接書くのは危険なため、このアプリは現在ロックされています。")
+    st.info("Streamlit Cloud の 'Advanced settings > Secrets' に `SITE_PASSWORD = 'あなたの合言葉'` を追加してください。")
+    st.stop()
 
 if not st.session_state.authenticated:
     st.title("🛰️ GKR:Re Authentication")
