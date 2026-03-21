@@ -8,9 +8,6 @@ from dotenv import load_dotenv
 # --- 1. 初期設定 ---
 load_dotenv()
 
-# セキュリティ：アクセス制限用のパスワード (Secrets推奨)
-ADMIN_PASSWORD = st.secrets.get("SITE_PASSWORD")
-
 # ページ設定
 st.set_page_config(
     page_title="GKR:Re Observation Device",
@@ -18,17 +15,71 @@ st.set_page_config(
     layout="centered"
 )
 
-# --- 認証チェック ---
+# --- 2. 共通関数定義 (NameError防止のため最上部に配置) ---
+
+def get_xai_api_key():
+    """APIキーを取得する。優先順位: 1.手入力 2.Secrets 3.env"""
+    if "input_key" in st.session_state and st.session_state.input_key:
+        return st.session_state.input_key
+    if "XAI_API_KEY" in st.secrets:
+        return st.secrets["XAI_API_KEY"]
+    return os.getenv("XAI_API_KEY")
+
+def extract_visual_prompt(text):
+    """テキスト内から [VISUAL: ...] 形式のプロンプトを抽出する"""
+    if not text:
+        return None
+    match = re.search(r'\[VISUAL:(.*?)\]', text, re.DOTALL)
+    if match:
+        return match.group(1).strip()
+    return None
+
+def call_grok(messages, api_key, tools=None):
+    """xAI API (Grok-4) を呼び出すメイン関数"""
+    if not api_key:
+        st.error("APIキーが検出できません。サイドバーで入力するかSecretsを確認してください。")
+        return None
+    
+    url = "https://api.x.ai/v1/chat/completions"
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_key}"
+    }
+    payload = {
+        "model": "grok-4-fast-non-reasoning",
+        "messages": messages,
+        "temperature": 0.85
+    }
+    if tools:
+        payload["tools"] = tools
+
+    try:
+        response = requests.post(url, headers=headers, json=payload, timeout=40)
+        if response.status_code == 200:
+            return response.json()
+        st.error(f"xAI API Error {response.status_code}: {response.text}")
+    except Exception as e:
+        st.error(f"接続失敗: {e}")
+    return None
+
+# --- 3. セキュリティ & 認証 ---
+
+# Secretsからパスワードを取得（コード内にデフォルト値を書かない）
+ADMIN_PASSWORD = st.secrets.get("SITE_PASSWORD")
+
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
+# パスワード未設定時の警告
 if ADMIN_PASSWORD is None:
     st.error("🔒 Security Error: 'SITE_PASSWORD' が Secrets に設定されていません。")
-    st.info("Streamlit Cloud の Secrets に `SITE_PASSWORD = 'あなたの合言葉'` を設定してください。")
+    st.info("Streamlit Cloud の Secrets 管理画面で `SITE_PASSWORD` を設定してください。")
     st.stop()
 
+# 認証画面
 if not st.session_state.authenticated:
     st.title("🛰️ GKR:Re Authentication")
+    st.markdown("### 並行未来観測デバイス：アクセス制限")
     pw = st.text_input("アクセスコード:", type="password")
     if st.button("Unlock System"):
         if pw == ADMIN_PASSWORD:
@@ -38,22 +89,14 @@ if not st.session_state.authenticated:
             st.error("認証失敗")
     st.stop()
 
-# --- システム設定 ---
+# --- 4. メインコンテンツ構築 ---
+
+# サイドバー設定
 st.sidebar.title("🛰️ GKR:Re Control")
-input_key = st.sidebar.text_input("xAI API Key (Override):", type="password")
-
-def get_xai_api_key():
-    if input_key: return input_key
-    if "XAI_API_KEY" in st.secrets: return st.secrets["XAI_API_KEY"]
-    return os.getenv("XAI_API_KEY")
-
+st.session_state.input_key = st.sidebar.text_input("xAI API Key (Override):", type="password")
 XAI_API_KEY = get_xai_api_key()
-XAI_BASE_URL = "https://api.x.ai/v1/chat/completions"
-MODEL_NAME = "grok-4-fast-non-reasoning"
 
-# --- 2. モード定義 (Ep.1 - Ep.6) ---
-
-# 文脈汚染を防ぎ、言語の使い分けを徹底させる指示
+# エピソード定義
 VISUAL_INSTRUCTION = """
 【重要：言語指定】
 1. 予言の本文（ストーリー）は必ず「日本語」で出力してください。
@@ -102,82 +145,39 @@ selected_mode = st.sidebar.selectbox("Observation Mode", list(MODES.keys()))
 st.sidebar.divider()
 st.sidebar.caption(f"Calibration: {selected_mode}")
 
-# --- 3. UI 構築 ---
 st.title(f"🌌 {selected_mode}")
 st.markdown(f"> **観測シナリオ:** {MODES[selected_mode]['scenario']}")
 
-# スタイル適用（視認性向上・コントラスト改善版）
+# UI スタイル適用
 st.markdown("""
     <style>
-    /* 全体背景：GitHubダークモード準拠 */
     .stApp { background-color: #0d1117; color: #e6edf3; }
-    
-    /* サイドバー */
     section[data-testid="stSidebar"] { background-color: #161b22 !important; }
-
-    /* ラベル文字の視認性向上 */
-    label, .stMarkdown p { 
-        color: #e6edf3 !important; 
-        font-weight: 500 !important;
-    }
-
-    /* テキストエリア：背景と文字のコントラストを最大化 */
+    label, .stMarkdown p { color: #e6edf3 !important; font-weight: 500 !important; }
     .stTextArea textarea { 
-        background-color: #1c2128 !important; 
-        color: #ffffff !important; 
-        border: 1px solid #444c56 !important; 
-        border-radius: 12px !important;
-        font-size: 16px !important;
-        padding: 15px !important;
+        background-color: #1c2128 !important; color: #ffffff !important; 
+        border: 1px solid #444c56 !important; border-radius: 12px !important;
+        font-size: 16px !important; padding: 15px !important;
     }
-    
-    /* プレースホルダー（記載例）の色を明るく設定 */
-    .stTextArea textarea::placeholder {
-        color: #8b949e !important;
-        opacity: 1;
-    }
-    
-    /* ボタン：視認性の高いグリーン */
+    .stTextArea textarea::placeholder { color: #8b949e !important; opacity: 1; }
     .stButton button { 
-        background-color: #238636 !important; 
-        color: #ffffff !important; 
-        border: 1px solid rgba(240,246,252,0.1) !important;
-        border-radius: 12px !important; 
-        width: 100% !important; 
-        font-weight: bold !important;
-        height: 3rem !important;
+        background-color: #238636 !important; color: #ffffff !important; 
+        border: 1px solid rgba(240,246,252,0.1) !important; border-radius: 12px !important; 
+        width: 100% !important; font-weight: bold !important; height: 3rem !important;
         box-shadow: 0 4px 12px rgba(0,0,0,0.5);
     }
-    .stButton button:hover {
-        background-color: #2ea043 !important;
-        border-color: #3fb950 !important;
-    }
-
-    /* 予言ボックス */
     .prophecy-box { 
-        background-color: #161b22; 
-        border: 1px solid #30363d;
-        border-left: 6px solid #2ea043; 
-        padding: 25px; 
-        border-radius: 12px; 
-        color: #f0f6fc;
-        line-height: 1.8;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        background-color: #161b22; border: 1px solid #30363d; border-left: 6px solid #2ea043; 
+        padding: 25px; border-radius: 12px; color: #f0f6fc; line-height: 1.8;
     }
-
-    /* プロンプトボックス：スカイブルーで読みやすく */
     .visual-prompt-box {
-        background-color: #0d1117;
-        border: 1px dashed #58a6ff;
-        padding: 15px;
-        color: #58a6ff;
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 0.85rem;
-        border-radius: 8px;
+        background-color: #0d1117; border: 1px dashed #58a6ff;
+        padding: 15px; color: #58a6ff; font-family: monospace; font-size: 0.85rem; border-radius: 8px;
     }
     </style>
     """, unsafe_allow_html=True)
 
+# 状態管理の初期化
 if 'step' not in st.session_state: st.session_state.step = "idle"
 if 'messages' not in st.session_state: st.session_state.messages = []
 if 'tool_call' not in st.session_state: st.session_state.tool_call = None
@@ -185,6 +185,7 @@ if 'final_output' not in st.session_state: st.session_state.final_output = ""
 
 user_input = st.text_area("燃料注入:", placeholder=MODES[selected_mode]['example'], height=150)
 
+# 観測ボタン
 if st.button("観測シーケンス開始") and user_input:
     st.session_state.messages = [
         {"role": "system", "content": MODES[selected_mode]["prompt"]},
@@ -194,7 +195,7 @@ if st.button("観測シーケンス開始") and user_input:
     
     with st.spinner("次元の壁を突破中..."):
         tools = [{"type": "function", "function": {"name": "grok_search", "description": "Search X", "parameters": {"type": "object", "properties": {"query": {"type": "string"}}, "required": ["query"]}}}]
-        result = call_grok(st.session_state.messages, tools=tools)
+        result = call_grok(st.session_state.messages, XAI_API_KEY, tools=tools)
         if result:
             msg = result["choices"][0]["message"]
             if msg.get("tool_calls"):
@@ -205,7 +206,7 @@ if st.button("観測シーケンス開始") and user_input:
                 st.session_state.final_output = msg["content"]
                 st.session_state.step = "completed"
 
-# インジェクション
+# インジェクション (ツール実行の補完)
 if st.session_state.step == "awaiting_injection":
     st.warning("⚠️ **Grokが現実の証拠を要求しています**")
     col1, col2 = st.columns(2)
@@ -220,21 +221,22 @@ if st.session_state.step == "awaiting_injection":
             st.session_state.step = "injecting"
             st.rerun()
 
+# 最終リクエスト処理
 if st.session_state.step == "injecting":
     st.session_state.messages.append({ "role": "tool", "tool_call_id": st.session_state.tool_call["id"], "name": "grok_search", "content": st.session_state.injection })
     with st.spinner("未来を確定中..."):
-        final_result = call_grok(st.session_state.messages)
+        final_result = call_grok(st.session_state.messages, XAI_API_KEY)
         if final_result:
             st.session_state.final_output = final_result["choices"][0]["message"]["content"]
             st.session_state.step = "completed"
             st.rerun()
 
+# 結果表示
 if st.session_state.step == "completed":
     st.markdown("---")
     raw_text = st.session_state.final_output
     
-    visual_match = re.search(r'\[VISUAL:(.*?)\]', raw_text, re.DOTALL)
-    visual_prompt = visual_match.group(1).strip() if visual_match else None
+    visual_prompt = extract_visual_prompt(raw_text)
     display_text = re.sub(r'\[VISUAL:.*?\]', '', raw_text, flags=re.DOTALL).strip()
 
     st.markdown(f'<div class="prophecy-box"><strong>【観測された並行未来】</strong><br><br>{display_text}</div>', unsafe_allow_html=True)
