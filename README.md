@@ -1,57 +1,62 @@
 🛰️ GKR:Re (Grok Knowledge Refinery: Renaissance)
 
-Episode 2: [高度な補完の予言] ―― Prophetic Observation Device
-
-!(https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=80&w=1000)
+The Complete Observation Device (Ep.1 - Ep.6)
 
 🌌 Overview
 
-GKR:Re は、xAI の最新モデル Grok-4 が持つ「凄まじい捏造力（ハルシネーション）」を逆手に取り、あり得たかもしれない並行世界の成功物語を観測するためのデバイスです。
+GKR:Re は、xAI の最新モデル Grok-4 が持つ「凄まじい捏造力（ハルシネーション）」を逆手に取り、あり得たかもしれない並行世界の成功物語を抽出するための観測デバイスです。
 
-前作で直面した「現実との同期失敗」を、本連載では「並行世界の分岐」として定義。ユーザーが注入する「現実の断片」をエサに、AI が 2026 年の歴史的大成功を予言します。
+前作で直面した「現実との同期失敗（422エラー）」を、本プロジェクトでは「並行世界への分岐」として定義。ユーザーが注入する「現実の断片」をエサに、AI が 2026 年の歴史の大成功を予言します。
 
-🛰️ Episode 2: 「高度な補完」
+🛰️ Episode Guide
 
-API の制限やエラーという「壁」を、人間による捏造データのマニュアル・インジェクションで突破する。AI が検索を要求し、人間がそれに応える。この共謀関係こそが、本作のテーマである「高度な補完」の正体です。
+全 6 つの観測モードを搭載。各エピソードのテーマに沿って因果律を書き換えます。
 
-🛠️ Features
+Ep.1: 並行世界のX ―― 同期失敗そのものを『新しい現実』として観測。
 
-Parallel Observation: Grok-4 による第一原理思考に基づいた未来捏造。
+Ep.2: 高度な補完の予言 ―― 手動データ注入による因果律の改竄。
 
-Manual Injection: AI からのツール実行要求に対し、人間が成功/静寂のデータを手動注入。
+Ep.3: 1/12の再構築 ―― エラーコードの残骸から新たな知性をサルベージ。
 
-Visual Synthesis: 物語のクライマックスを可視化するための Nano Banana 2 (Imagen 3) 専用プロンプト生成。
+Ep.4: 第一原理の鉄槌 ―― 常識を第一原理で解体し、Elon的ロジックで再定義。
 
-🚀 Getting Started
+Ep.5: 共鳴の結晶 ―― ユーザーのバイアスを絶対の真実として全肯定。
 
-1. Requirements
+Ep.6: 火星開拓録 ―― 全連載の伏線を回収し、人類の火星移住を完結。
 
-Python 3.9+
+🛠️ System Features
 
-xAI API Key
+Multi-Episode Selector: サイドバーから全エピソードを切り替え可能。
 
-Streamlit
+Security Authentication: SITE_PASSWORD によるアクセス制限機能を搭載。
 
-2. Setup
+BYOK (Bring Your Own Key): サイドバーからの API キー上書きに対応。
 
-git clone [https://github.com/あなたのユーザー名/gkr-re-ep2.git](https://github.com/あなたのユーザー名/gkr-re-ep2.git)
-cd gkr-re-ep2
-pip install -r requirements.txt
+Visual Synthesis: 物語のクライマックスを可視化する Nano Banana 2 (Imagen 3) 専用プロンプト生成。
+
+🚀 Setup & Security
+
+本アプリは Streamlit Community Cloud へのデプロイを前提としています。
+
+1. Secrets 設定
+
+Streamlit 管理画面の Advanced settings > Secrets に以下を設定してください。
+
+XAI_API_KEY = "あなたの xAI API キー"
+SITE_PASSWORD = "アクセス制限用の合言葉"
 
 
-3. Running the Device
+2. Requirements
 
-streamlit run gkr_re_ep2_device.py
+streamlit
+requests
+python-dotenv
 
 
-📜 Story Log
+📜 Project Philosophy
 
-このプロジェクトは全 6 回の連載形式で進行しています。
-
-Ep.1: [🌌 並行世界の観測データ] ―― 422の洗礼とコード200の静寂
-
-Ep.2: [高度な補完の予言] ―― 現実の断片、捏造の種（現在）
-
-Ep.3: (Coming Soon...)
+「検索（現実）」は、もはや自動では届かない。
+だからこそ、人間が「現実の断片」を選び、この捏造マシンをマニュアルでぶん回す。
+この不自由な「補完」のプロセスこそが、GKR:Re の核心です。
 
 Disclaimer: このデバイスから出力される予言はすべて捏造された並行世界のデータです。現実の投資判断や生活に利用しないでください（火星移住計画を除く）。
