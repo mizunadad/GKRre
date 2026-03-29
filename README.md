@@ -1,62 +1,63 @@
-🛰️ GKR:Re (Grok Knowledge Refinery: Renaissance)
+🛰️ GKRre (Grok Knowledge Refinery: Renaissance)
 
-The Complete Observation Device (Ep.1 - Ep.6)
+2026 Parallel Future Observation Device [Episode 7: Auto-Materialization]
 
 🌌 Overview
 
-GKR:Re は、xAI の最新モデル Grok-4 が持つ「凄まじい捏造力（ハルシネーション）」を逆手に取り、あり得たかもしれない並行世界の成功物語を抽出するための観測デバイスです。
+GKRre は、xAI の最新モデル Grok-4 の「捏造力（ハルシネーション）」と、Google Cloud Vertex AI (Imagen 3) の「具現化力」を直結させた、並行世界観測デバイスです。
 
-前作で直面した「現実との同期失敗（422エラー）」を、本プロジェクトでは「並行世界への分岐」として定義。ユーザーが注入する「現実の断片」をエサに、AI が 2026 年の歴史の大成功を予言します。
+日常の些細な予定や問いを「燃料」として注入することで、2026年の歴史的な成功物語を紡ぎ出し、その光景を即座に可視化します。
 
-🛰️ Episode Guide
+🛰️ Key Features
 
-全 6 つの観測モードを搭載。各エピソードのテーマに沿って因果律を書き換えます。
+Grok-4 Integration: Elon Musk の第一原理思考をベースとした強気な予言生成。
 
-Ep.1: 並行世界のX ―― 同期失敗そのものを『新しい現実』として観測。
+Auto-Materialization: Imagen 3.0 による全自動画像生成（Ep.7）。コピペ不要で予言の直後に画像が表示されます。
 
-Ep.2: 高度な補完の予言 ―― 手動データ注入による因果律の改竄。
+Multi-Episode Mode: Ep.1〜Ep.7 までの異なる観測プロトコルを搭載。
 
-Ep.3: 1/12の再構築 ―― エラーコードの残骸から新たな知性をサルベージ。
+Security Gate: SITE_PASSWORD（合言葉）によるセッション保護と、安全なログアウト機能。
 
-Ep.4: 第一原理の鉄槌 ―― 常識を第一原理で解体し、Elon的ロジックで再定義。
+🛠️ Setup Guide
 
-Ep.5: 共鳴の結晶 ―― ユーザーのバイアスを絶対の真実として全肯定。
+1. 必要要件
 
-Ep.6: 火星開拓録 ―― 全連載の伏線を回収し、人類の火星移住を完結。
+xAI API Key
 
-🛠️ System Features
+Google Cloud Project (Vertex AI API 有効化済み)
 
-Multi-Episode Selector: サイドバーから全エピソードを切り替え可能。
+サービスアカウントの JSON キー
 
-Security Authentication: SITE_PASSWORD によるアクセス制限機能を搭載。
+2. Streamlit Cloud へのデプロイ
 
-BYOK (Bring Your Own Key): サイドバーからの API キー上書きに対応。
+このリポジトリをフォークまたはプッシュ。
 
-Visual Synthesis: 物語のクライマックスを可視化する Nano Banana 2 (Imagen 3) 専用プロンプト生成。
+Streamlit Cloud で gkr_re_streamlit_app_git.py をメインファイルとしてデプロイ。
 
-🚀 Setup & Security
-
-本アプリは Streamlit Community Cloud へのデプロイを前提としています。
-
-1. Secrets 設定
-
-Streamlit 管理画面の Advanced settings > Secrets に以下を設定してください。
+Advanced settings > Secrets に以下の情報を入力してください。
 
 XAI_API_KEY = "あなたの xAI API キー"
-SITE_PASSWORD = "アクセス制限用の合言葉"
+SITE_PASSWORD = "認証用の合言葉（任意）"
+
+[gcp_service_account]
+type = "service_account"
+project_id = "..."
+private_key_id = "..."
+private_key = "-----BEGIN PRIVATE KEY-----\n..."
+client_email = "..."
+# (以下、ダウンロードした JSON の中身をすべて貼り付け)
 
 
-2. Requirements
+🚀 How to Observe
 
-streamlit
-requests
-python-dotenv
+アプリを起動し、設定した SITE_PASSWORD で認証。
 
+サイドバーから Observation Mode（エピソード）を選択。
 
-📜 Project Philosophy
+燃料注入 (Input) スロットに、あなたの予定や問いを入力。
 
-「検索（現実）」は、もはや自動では届かない。
-だからこそ、人間が「現実の断片」を選び、この捏造マシンをマニュアルでぶん回す。
-この不自由な「補完」のプロセスこそが、GKR:Re の核心です。
+観測と具現化を開始 ボタンを押下し、未来が構築されるのを待つ。
 
-Disclaimer: このデバイスから出力される予言はすべて捏造された並行世界のデータです。現実の投資判断や生活に利用しないでください（火星移住計画を除く）。
+⚠️ Disclaimer
+
+このデバイスで観測される未来は、Grok-4 による高度な捏造データです。現実との同期を目的としたものではありません。10ドルの聖域（クレジット枠）を大切に運用してください。
