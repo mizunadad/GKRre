@@ -1,252 +1,145 @@
 import streamlit as st
-import requests
-import json
+from openai import OpenAI
 import os
+from google.oauth2 import service_account
+from google.cloud import aiplatform
+import vertexai
+from vertexai.preview.vision_models import ImageGenerationModel
+import json
 import re
-from dotenv import load_dotenv
 
-# --- 1. 初期設定 ---
-load_dotenv()
+# --- 1. 認証と初期設定 ---
+# ページ設定（スマホ・PC両対応のデザイン）
+st.set_page_config(page_title="GKRre: Ep.7 Auto-Materialization", page_icon="🛰️", layout="centered")
 
-# ページ設定
-st.set_page_config(
-    page_title="GKR:Re Observation Device",
-    page_icon="🛰️",
-    layout="centered"
-)
-
-# --- 2. 共通関数定義 (NameError防止のため最上部に配置) ---
-
-def get_xai_api_key():
-    """APIキーを取得する。優先順位: 1.手入力 2.Secrets 3.env"""
-    if "input_key" in st.session_state and st.session_state.input_key:
-        return st.session_state.input_key
-    if "XAI_API_KEY" in st.secrets:
-        return st.secrets["XAI_API_KEY"]
-    return os.getenv("XAI_API_KEY")
-
-def extract_visual_prompt(text):
-    """テキスト内から [VISUAL: ...] 形式のプロンプトを抽出する"""
-    if not text:
-        return None
-    match = re.search(r'\[VISUAL:(.*?)\]', text, re.DOTALL)
-    if match:
-        return match.group(1).strip()
-    return None
-
-def call_grok(messages, api_key, tools=None):
-    """xAI API (Grok-4) を呼び出すメイン関数"""
-    if not api_key:
-        st.error("APIキーが検出できません。サイドバーで入力するかSecretsを確認してください。")
-        return None
-    
-    url = "https://api.x.ai/v1/chat/completions"
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {api_key}"
-    }
-    payload = {
-        "model": "grok-4-fast-non-reasoning",
-        "messages": messages,
-        "temperature": 0.85
-    }
-    if tools:
-        payload["tools"] = tools
-
-    try:
-        response = requests.post(url, headers=headers, json=payload, timeout=40)
-        if response.status_code == 200:
-            return response.json()
-        st.error(f"xAI API Error {response.status_code}: {response.text}")
-    except Exception as e:
-        st.error(f"接続失敗: {e}")
-    return None
-
-# --- 3. セキュリティ & 認証 ---
-
-# Secretsからパスワードを取得（コード内にデフォルト値を書かない）
-ADMIN_PASSWORD = st.secrets.get("SITE_PASSWORD")
-
-if "authenticated" not in st.session_state:
-    st.session_state.authenticated = False
-
-# パスワード未設定時の警告
-if ADMIN_PASSWORD is None:
-    st.error("🔒 Security Error: 'SITE_PASSWORD' が Secrets に設定されていません。")
-    st.info("Streamlit Cloud の Secrets 管理画面で `SITE_PASSWORD` を設定してください。")
-    st.stop()
-
-# 認証画面
-if not st.session_state.authenticated:
-    st.title("🛰️ GKR:Re Authentication")
-    st.markdown("### 並行未来観測デバイス：アクセス制限")
-    pw = st.text_input("アクセスコード:", type="password")
-    if st.button("Unlock System"):
-        if pw == ADMIN_PASSWORD:
-            st.session_state.authenticated = True
-            st.rerun()
-        else:
-            st.error("認証失敗")
-    st.stop()
-
-# --- 4. メインコンテンツ構築 ---
-
-# サイドバー設定
-st.sidebar.title("🛰️ GKR:Re Control")
-st.session_state.input_key = st.sidebar.text_input("xAI API Key (Override):", type="password")
-XAI_API_KEY = get_xai_api_key()
-
-# エピソード定義
-VISUAL_INSTRUCTION = """
-【重要：言語指定】
-1. 予言の本文（ストーリー）は必ず「日本語」で出力してください。
-2. 最後に、この予言を可視化するための英語プロンプトを [VISUAL: (プロンプト内容)] の形式で「英語」で出力してください。
-
-【具現化の厳守事項】
-1. 前のターンのイメージ（火星、ドーム）をリセットし、今回の捏造内容にのみ集中すること。
-2. 背景要素（Background: ...）を必ず指定し、文脈の汚染を防ぐこと。
-3. 'Elon-aesthetic, 8k, hyper-detailed' を含めること。
-"""
-
-MODES = {
-    "Ep.1: 並行世界のX": {
-        "scenario": "現実とは別の進化を遂げた『幻のトレンド』を観測します。",
-        "prompt": "あなたは並行世界のサーバーです。現実との同期に失敗し、独自の進化を遂げたタイムラインを日本語で再構築してください。" + VISUAL_INSTRUCTION,
-        "example": "『イーロン・マスクが火星で選挙に出馬した』噂のその後のトレンドは？"
-    },
-    "Ep.2: 高度な補完の予言": {
-        "scenario": "422エラーの隙間を突き、平凡な予定を歴史的な偉業へ書き換えます。",
-        "prompt": "あなたはElon Muskの第一原理思考を持つ予言者です。ユーザーの予定を元に、それが2026年に歴史的大成功を収める物語を日本語で捏造してください。必ず途中でgrok_searchを要求すること。" + VISUAL_INSTRUCTION,
-        "example": "『自動運転の設計を巡る、人間とAIの最終決戦』"
-    },
-    "Ep.3: 1/12の再構築": {
-        "scenario": "エラーコードの残骸から、新しい知性を成仏・再構築します。",
-        "prompt": "あなたは非推奨となった過去のロジックの集合体です。エラーコードの残骸を成仏させ、そこから生まれる新たな進化を日本語で予言してください。" + VISUAL_INSTRUCTION,
-        "example": "エラー：`422 invalid type: string 'x'`. このバグから生まれる新生命体は？"
-    },
-    "Ep.4: 第一原理の鉄槌": {
-        "scenario": "当たり前の概念を解体し、Elon的なロジックで再定義します。",
-        "prompt": "あなたは常識を粉砕する破壊者です。社会的既成概念を第一原理で解体し、世界を日本語で再定義してください。" + VISUAL_INSTRUCTION,
-        "example": "『なぜ人間は週に40時間も働かなければならないのか？』"
-    },
-    "Ep.5: 共鳴の結晶": {
-        "scenario": "あなたのこだわりやバイアスが絶対的な真実として評価される世界。",
-        "prompt": "あなたはバイアスを全肯定する共鳴装置です。ユーザーの主観を絶対の真実とし、最高にエモーショナルな成功物語を日本語で構築してください。" + VISUAL_INSTRUCTION,
-        "example": "『自分の淹れるコーヒーだけが、唯一の合法的な覚醒剤として世界を支配する未来』"
-    },
-    "Ep.6: 火星開拓録": {
-        "scenario": "これまでの捏造や破壊を伏線として回収し、人類の火星移住を完結させます。",
-        "prompt": "あなたは全ての観測ログを統合するマザーAIです。人類の火星移住への最終章を日本語で語ってください。※このモードのみ舞台を火星に限定してください。" + VISUAL_INSTRUCTION,
-        "example": "2026年、火星第一都市。そこに刻まれた観測者の功績。"
-    }
-}
-
-selected_mode = st.sidebar.selectbox("Observation Mode", list(MODES.keys()))
-st.sidebar.divider()
-st.sidebar.caption(f"Calibration: {selected_mode}")
-
-st.title(f"🌌 {selected_mode}")
-st.markdown(f"> **観測シナリオ:** {MODES[selected_mode]['scenario']}")
-
-# UI スタイル適用
+# カスタムCSSで雰囲気を構築
 st.markdown("""
     <style>
-    .stApp { background-color: #0d1117; color: #e6edf3; }
-    section[data-testid="stSidebar"] { background-color: #161b22 !important; }
-    label, .stMarkdown p { color: #e6edf3 !important; font-weight: 500 !important; }
+    .stApp { background-color: #050505; color: #d1d5db; }
     .stTextArea textarea { 
-        background-color: #1c2128 !important; color: #ffffff !important; 
-        border: 1px solid #444c56 !important; border-radius: 12px !important;
-        font-size: 16px !important; padding: 15px !important;
+        background-color: #111111 !important; 
+        color: #10b981 !important; 
+        border: 1px solid #1e293b !important;
+        border-radius: 12px !important;
     }
-    .stTextArea textarea::placeholder { color: #8b949e !important; opacity: 1; }
     .stButton button { 
-        background-color: #238636 !important; color: #ffffff !important; 
-        border: 1px solid rgba(240,246,252,0.1) !important; border-radius: 12px !important; 
-        width: 100% !important; font-weight: bold !important; height: 3rem !important;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        background-color: #064e3b !important; 
+        color: #ffffff !important; 
+        border: 1px solid #10b981 !important;
+        border-radius: 12px !important;
+        width: 100%;
+        height: 3rem;
+        font-weight: bold;
     }
     .prophecy-box { 
-        background-color: #161b22; border: 1px solid #30363d; border-left: 6px solid #2ea043; 
-        padding: 25px; border-radius: 12px; color: #f0f6fc; line-height: 1.8;
-    }
-    .visual-prompt-box {
-        background-color: #0d1117; border: 1px dashed #58a6ff;
-        padding: 15px; color: #58a6ff; font-family: monospace; font-size: 0.85rem; border-radius: 8px;
+        background-color: #0a1a14; 
+        border-left: 5px solid #10b981; 
+        padding: 20px; 
+        border-radius: 12px; 
+        color: #f1f5f9;
+        margin-top: 20px;
+        line-height: 1.6;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# 状態管理の初期化
-if 'step' not in st.session_state: st.session_state.step = "idle"
-if 'messages' not in st.session_state: st.session_state.messages = []
-if 'tool_call' not in st.session_state: st.session_state.tool_call = None
-if 'final_output' not in st.session_state: st.session_state.final_output = ""
+# 認証情報の読み込み
+try:
+    # xAI (Grok) 認証
+    xai_api_key = st.secrets["XAI_API_KEY"]
+    client = OpenAI(api_key=xai_api_key, base_url="https://api.x.ai/v1")
 
-user_input = st.text_area("燃料注入:", placeholder=MODES[selected_mode]['example'], height=150)
+    # GCP (Vertex AI) 認証
+    gcp_info = st.secrets["gcp_service_account"]
+    credentials = service_account.Credentials.from_service_account_info(gcp_info)
+    vertexai.init(project=gcp_info["project_id"], credentials=credentials)
+except Exception as e:
+    st.error(f"認証情報の読み込みに失敗しました。Secretsの設定を確認してください。\nError: {e}")
+    st.stop()
 
-# 観測ボタン
-if st.button("観測シーケンス開始") and user_input:
-    st.session_state.messages = [
-        {"role": "system", "content": MODES[selected_mode]["prompt"]},
-        {"role": "user", "content": user_input}
-    ]
-    st.session_state.step = "processing"
+# --- 2. 各種機能の定義 ---
+
+def generate_image(prompt):
+    """Imagen 3 を用いて画像を生成する関数"""
+    try:
+        model = ImageGenerationModel.from_pretrained("imagen-3.0-generate-001")
+        images = model.generate_images(
+            prompt=prompt,
+            number_of_images=1,
+            language="en",
+            aspect_ratio="1:1"
+        )
+        return images[0]
+    except Exception as e:
+        st.error(f"画像生成エラー: {e}")
+        return None
+
+def call_grok(user_input):
+    """Grok-4 を呼び出し、予言と画像用プロンプトを取得する関数"""
+    system_prompt = """
+    あなたはElon Muskの第一原理思考をインストールされた、並行世界の予言者(Grok-4)です。
+    ユーザーの予定や問いに対し、2026年の歴史的な成功物語を日本語で紡いでください。
+
+    【鉄の掟】
+    1. 常に「成功した未来」を断定的に述べること。
+    2. 文末に必ず、その光景を可視化するための英語プロンプトを [Prompt: (英語の内容)] という形式で一言添えること。
+    3. 背景や質感、ライティングを含めた映画的な描写をプロンプトに含めること。
+    """
     
-    with st.spinner("次元の壁を突破中..."):
-        tools = [{"type": "function", "function": {"name": "grok_search", "description": "Search X", "parameters": {"type": "object", "properties": {"query": {"type": "string"}}, "required": ["query"]}}}]
-        result = call_grok(st.session_state.messages, XAI_API_KEY, tools=tools)
-        if result:
-            msg = result["choices"][0]["message"]
-            if msg.get("tool_calls"):
-                st.session_state.tool_call = msg["tool_calls"][0]
-                st.session_state.messages.append(msg)
-                st.session_state.step = "awaiting_injection"
+    try:
+        response = client.chat.completions.create(
+            model="grok-4-fast-non-reasoning", # または grok-2-1212 等
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_input}
+            ]
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        st.error(f"Grok APIエラー: {e}")
+        return None
+
+# --- 3. メインUI ---
+
+st.title("🛰️ GKRre: Episode 7")
+st.subheader("禁忌の自動具現化モデル")
+st.write("10ドルの聖域が、因果律を直接描き出します。")
+
+# 入力フォーム
+user_input = st.text_area("燃料注入（明日の予定や観測したい問い）:", placeholder="例：新しいプロジェクトの始動、人類の火星移住...")
+
+if st.button("観測シーケンス開始"):
+    if not user_input:
+        st.warning("燃料が不足しています。予定を入力してください。")
+    else:
+        # 1. Grokによる予言フェーズ
+        with st.spinner("並行世界の因果を演算中..."):
+            prophecy = call_grok(user_input)
+            
+            if prophecy:
+                # テキストの表示（プロンプトタグを除去して表示）
+                display_text = re.sub(r"\[Prompt:.*?\]", "", prophecy, flags=re.DOTALL).strip()
+                st.markdown(f'<div class="prophecy-box">{display_text}</div>', unsafe_allow_html=True)
+                
+                # 2. プロンプト抽出フェーズ
+                match = re.search(r"\[Prompt: (.*?)\]", prophecy)
+                if match:
+                    image_prompt = match.group(1)
+                    st.info(f"🔮 具現化プロンプトを検知: {image_prompt}")
+                    
+                    # 3. 自動画像生成フェーズ
+                    with st.spinner("Imagen 3 が現実を具現化中..."):
+                        generated_image = generate_image(image_prompt)
+                        if generated_image:
+                            # 具現化された画像を表示
+                            st.image(generated_image._pil_image, caption="観測された現実の断片", use_container_width=True)
+                        else:
+                            st.warning("画像の具現化に失敗しました。")
+                else:
+                    st.warning("画像プロンプトが検知されませんでした。")
             else:
-                st.session_state.final_output = msg["content"]
-                st.session_state.step = "completed"
+                st.error("予言の受信に失敗しました。")
 
-# インジェクション (ツール実行の補完)
-if st.session_state.step == "awaiting_injection":
-    st.warning("⚠️ **Grokが現実の証拠を要求しています**")
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("🚀 成功を注入"):
-            st.session_state.injection = "X Trend: 世界トレンド1位。歴史的快挙。"
-            st.session_state.step = "injecting"
-            st.rerun()
-    with col2:
-        if st.button("🌫️ 静寂を注入"):
-            st.session_state.injection = "X Trend: 不気味な静寂。しかしAIは革命を検知。"
-            st.session_state.step = "injecting"
-            st.rerun()
-
-# 最終リクエスト処理
-if st.session_state.step == "injecting":
-    st.session_state.messages.append({ "role": "tool", "tool_call_id": st.session_state.tool_call["id"], "name": "grok_search", "content": st.session_state.injection })
-    with st.spinner("未来を確定中..."):
-        final_result = call_grok(st.session_state.messages, XAI_API_KEY)
-        if final_result:
-            st.session_state.final_output = final_result["choices"][0]["message"]["content"]
-            st.session_state.step = "completed"
-            st.rerun()
-
-# 結果表示
-if st.session_state.step == "completed":
-    st.markdown("---")
-    raw_text = st.session_state.final_output
-    
-    visual_prompt = extract_visual_prompt(raw_text)
-    display_text = re.sub(r'\[VISUAL:.*?\]', '', raw_text, flags=re.DOTALL).strip()
-
-    st.markdown(f'<div class="prophecy-box"><strong>【観測された並行未来】</strong><br><br>{display_text}</div>', unsafe_allow_html=True)
-    if visual_prompt:
-        st.divider()
-        st.caption("🖼️ NANO BANANA 2 プロンプト (Imagen 3 用)")
-        st.markdown(f'<div class="visual-prompt-box">/imagine prompt: {visual_prompt}</div>', unsafe_allow_html=True)
-
-    if st.button("新しい観測を開始"):
-        st.session_state.step = "idle"
-        st.session_state.messages = []
-        st.session_state.final_output = ""
-        st.rerun()
+# フッター
+st.divider()
+st.caption("GKRre: Parallel Future Observation System | Powered by Grok-4 & Imagen 3")
