@@ -33,12 +33,13 @@ st.markdown("""
         font-size: 1.1rem !important;
         box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
     }
-    /* ログアウトボタン用の赤系スタイル */
+    /* ログアウトボタン用のスタイル */
     div[data-testid="stSidebar"] .stButton button {
         background-color: #334155 !important;
         font-size: 0.8rem !important;
         padding: 0.4rem 1rem !important;
         margin-top: 10px;
+        width: 100%;
     }
     div[data-testid="stSidebar"] .stButton button:hover {
         background-color: #ef4444 !important;
@@ -75,6 +76,7 @@ st.markdown("""
 
 # --- 2. 認証・初期化 ---
 def get_xai_api_key():
+    # セッション内の override_key (ウィジェットのkey) を確認
     if "override_key" in st.session_state and st.session_state.override_key:
         return st.session_state.override_key
     return st.secrets.get("XAI_API_KEY", "")
@@ -142,17 +144,23 @@ def call_grok(user_input, episode_style, api_key):
 
 # --- 4. メインUI ---
 
-# サイドバー設定 (題名を明確化)
+# サイドバー設定
 st.sidebar.title("🛰️ GKR:Re Control")
 
 # ログアウト/リセット機能の実装
 if st.sidebar.button("Logout / Reset Session"):
-    # セッション情報のクリア
-    for key in list(st.session_state.keys()):
-        del st.session_state[key]
+    # セッション内の全情報を完全に消去
+    st.session_state.clear()
+    # アプリを強制再起動して初期状態に戻す
     st.rerun()
 
-st.session_state.override_key = st.sidebar.text_input("xAI API Key (Override):", type="password", key="api_input")
+# APIキーの入力 (key="override_key" で session_state と直接同期)
+st.sidebar.text_input(
+    "xAI API Key (Override):", 
+    type="password", 
+    key="override_key",
+    help="xAI APIキーを入力するとSecretsの設定を上書きします"
+)
 
 episode_map = {
     "Ep.1: 並行世界の同期失敗": "Ep.1",
