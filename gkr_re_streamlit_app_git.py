@@ -25,6 +25,7 @@ st.markdown("""
         font-size: 16px !important;
     }
     
+    /* 観測ボタン（グリーン） */
     .stButton button { 
         background-color: #1e7e4e !important; 
         color: #ffffff !important; 
@@ -36,6 +37,7 @@ st.markdown("""
         box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
     }
     
+    /* サイドバーのログアウトボタン */
     div[data-testid="stSidebar"] .stButton button {
         background-color: #1e7e4e !important;
         color: white !important;
@@ -44,9 +46,11 @@ st.markdown("""
         margin-top: 10px;
         width: 100%;
         border-radius: 8px !important;
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+        border: none !important;
     }
     
-    .theme-header { color: #10b981; font-weight: bold; font-size: 0.8rem; }
+    .theme-header { color: #10b981; font-weight: bold; font-size: 0.8rem; letter-spacing: 0.1em; }
     .scenario-text {
         color: #ffffff;
         border-left: 3px solid #10b981;
@@ -112,7 +116,7 @@ try:
 except Exception:
     pass
 
-# --- 3. プロンプト定義（Ep.1〜Ep.7 全開放） ---
+# --- 3. 定義データ（プロンプト、シナリオ、ガイド） ---
 
 VISUAL_CMD = "\n最後に、その光景を可視化するための英語プロンプトを必ず [Prompt: (英語プロンプト)] 形式で添えてください。"
 
@@ -136,9 +140,48 @@ SCENARIOS = {
     "Ep.7": "因果律を直接描き出し、未来の光景をフルオートで具現化します。"
 }
 
+GUIDE_CONTENT = {
+    "Ep.1": {
+        "how_to": "日常のありふれたモノ（タピオカ、信号機、コンビニ等）を入力してください。",
+        "expected": "それらが全く別の用途として発展した異質な現代が描かれます。",
+        "example": "「もしタピオカが飲料ではなく、次世代のクリーンエネルギーとして採用されていたら？」"
+    },
+    "Ep.2": {
+        "how_to": "あなたの直近の予定や、今日やった些細なことを入力してください。",
+        "expected": "その小さな一歩が、2026年に世界を救うビッグイベントへ繋がるまでの成功譚が描かれます。",
+        "example": "「今日、駅前で落とした財布を拾ってもらった。これが私の帝国の始まりだとしたら？」"
+    },
+    "Ep.3": {
+        "how_to": "過去の失敗、PCのフリーズ、プログラムのバグなどを入力してください。",
+        "expected": "その『エラー』こそが進化の起点だった。バグから生まれた新人類や新技術の光景です。",
+        "example": "「2024年のシステム障害で生まれた無限ループのコードが、自我を持ったとしたら？」"
+    },
+    "Ep.4": {
+        "how_to": "誰もが疑わない『常識』や『物理法則』を入力してください。",
+        "expected": "それをElon的合理性で粉砕。全く新しい生存ルールが定義されます。",
+        "example": "「睡眠は非効率だ。8時間の休息を排除し、24時間フル稼働する人類の都市構造とは？」"
+    },
+    "Ep.5": {
+        "how_to": "あなたの個人的なこだわり、偏見、大好きなものを入力してください。",
+        "expected": "あなたの主観が『憲法』になった世界。最高に美しく偏った未来が紡がれます。",
+        "example": "「世界中のすべての建物が、私の好きな昭和レトロな喫茶店スタイルで統一された未来。」"
+    },
+    "Ep.6": {
+        "how_to": "これまでの観測で気になったキーワードを入力してください。",
+        "expected": "すべての断片が繋がり、火星での人類最終章としての物語が完結します。",
+        "example": "「これまでの捏造、バグ、主観のすべてを飲み込んだ、火星での戴冠式の様子を。」"
+    },
+    "Ep.7": {
+        "how_to": "2026年に達成したい具体的な野望、またはElonへの問いを入力してください。",
+        "expected": "Musk本人のような口調で、あなたの勝利を断定。その歴史的瞬間の写真が具現化されます。",
+        "example": "「2026年、私の作ったWebサービスがテスラの車載OSに標準採用されている。その発表会。」"
+    }
+}
+
 # --- 4. 機能定義 ---
 
 def generate_image(prompt):
+    """Imagen 3 による自動具現化"""
     try:
         model = ImageGenerationModel.from_pretrained("imagen-3.0-generate-001")
         images = model.generate_images(prompt=prompt, number_of_images=1, language="en", aspect_ratio="1:1")
@@ -148,6 +191,7 @@ def generate_image(prompt):
         return None
 
 def call_grok(user_input, ep_id, api_key):
+    """Grok-4 によるテキスト生成"""
     if not api_key: return None
     client = OpenAI(api_key=api_key, base_url="https://api.x.ai/v1")
     try:
@@ -223,13 +267,30 @@ icon = icon_map.get(ep_id, "🛰️")
 
 st.title(f"{icon} {selected_display}")
 
+# 1. 観測目的の表示
 st.markdown('<p class="theme-header">THEME / 観測目的</p>', unsafe_allow_html=True)
-st.markdown(f'<div class="scenario-text">{SCENARIOS.get(ep_id)}</div>', unsafe_allow_html=True)
+st.markdown(fdiv class="scenario-text">{SCENARIOS.get(ep_id)}</div>', unsafe_allow_html=True)
 
+# 2. 観測ガイドの表示
+guide = GUIDE_CONTENT.get(ep_id, {})
+with st.expander("📖 OBSERVATION GUIDE (このモードの遊び方)", expanded=True):
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("**注入すべき燃料（入力）**")
+        st.write(guide.get("how_to"))
+    with col2:
+        st.markdown("**観測される未来（結果）**")
+        st.write(guide.get("expected"))
+    st.divider()
+    st.markdown("**推奨される注入例:**")
+    st.code(guide.get("example"), language="text")
+
+# 3. システムプロンプト表示
 with st.expander("🛠️ SYSTEM COMMAND (AIへの内部命令表示)"):
     st.markdown(f'<div class="system-prompt-box">{SYSTEM_PROMPTS.get(ep_id)}</div>', unsafe_allow_html=True)
 
-user_input = st.text_area("燃料注入 (Input):", placeholder="内容を入力...", height=150, key="user_input_val")
+# 燃料注入 (Input)
+user_input = st.text_area("燃料注入 (Input Slot):", placeholder="内容を入力...", height=150, key="user_input_val")
 
 if st.button("🛰️ 観測と具現化を開始"):
     if user_input:
