@@ -2,7 +2,7 @@ import streamlit as st
 from openai import OpenAI
 import os
 from google.oauth2 import service_account
-from google.cloud aiplatform import aiplatform
+from google.cloud import aiplatform
 import vertexai
 from vertexai.preview.vision_models import ImageGenerationModel
 import json
