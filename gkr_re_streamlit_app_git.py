@@ -33,6 +33,17 @@ st.markdown("""
         font-size: 1.1rem !important;
         box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
     }
+    /* ログアウトボタン用の赤系スタイル */
+    div[data-testid="stSidebar"] .stButton button {
+        background-color: #334155 !important;
+        font-size: 0.8rem !important;
+        padding: 0.4rem 1rem !important;
+        margin-top: 10px;
+    }
+    div[data-testid="stSidebar"] .stButton button:hover {
+        background-color: #ef4444 !important;
+        color: white !important;
+    }
     .theme-header {
         color: #10b981;
         font-weight: bold;
@@ -133,7 +144,15 @@ def call_grok(user_input, episode_style, api_key):
 
 # サイドバー設定 (題名を明確化)
 st.sidebar.title("🛰️ GKR:Re Control")
-st.session_state.override_key = st.sidebar.text_input("xAI API Key (Override):", type="password")
+
+# ログアウト/リセット機能の実装
+if st.sidebar.button("Logout / Reset Session"):
+    # セッション情報のクリア
+    for key in list(st.session_state.keys()):
+        del st.session_state[key]
+    st.rerun()
+
+st.session_state.override_key = st.sidebar.text_input("xAI API Key (Override):", type="password", key="api_input")
 
 episode_map = {
     "Ep.1: 並行世界の同期失敗": "Ep.1",
