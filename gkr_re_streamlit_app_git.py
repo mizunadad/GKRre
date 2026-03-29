@@ -2,7 +2,7 @@ import streamlit as st
 from openai import OpenAI
 import os
 from google.oauth2 import service_account
-from google.cloud import aiplatform
+from google.cloud aiplatform import aiplatform
 import vertexai
 from vertexai.preview.vision_models import ImageGenerationModel
 import json
@@ -269,7 +269,7 @@ st.title(f"{icon} {selected_display}")
 
 # 1. 観測目的の表示
 st.markdown('<p class="theme-header">THEME / 観測目的</p>', unsafe_allow_html=True)
-st.markdown(fdiv class="scenario-text">{SCENARIOS.get(ep_id)}</div>', unsafe_allow_html=True)
+st.markdown(f'<div class="scenario-text">{SCENARIOS.get(ep_id)}</div>', unsafe_allow_html=True)
 
 # 2. 観測ガイドの表示
 guide = GUIDE_CONTENT.get(ep_id, {})
@@ -297,14 +297,20 @@ if st.button("🛰️ 観測と具現化を開始"):
         with st.spinner("因果律を演算中..."):
             result = call_grok(user_input, ep_id, api_key)
             if result:
+                # テキスト表示
                 display_text = re.sub(r"\[Prompt:.*?\]", "", result, flags=re.DOTALL).strip()
                 st.markdown(f'<div class="prophecy-box">{display_text}</div>', unsafe_allow_html=True)
                 
+                # 自動画像生成 (プロンプト検知時)
                 match = re.search(r"\[Prompt: (.*?)\]", result)
                 if match:
                     image_prompt = match.group(1)
                     st.info(f"🔮 具現化検知: {image_prompt}")
-                    with st.spinner("Imagen 3 が描画中..."):
+                    with st.spinner("Imagen 3 が現実を具現化中..."):
                         gen_img = generate_image(image_prompt)
                         if gen_img:
                             st.image(gen_img._pil_image, caption="観測された現実の断片", use_container_width=True)
+                else:
+                    st.warning("画像プロンプトが検知されなかったため、テキストのみ表示します。")
+    else:
+        st.warning("燃料（予定や問い）を注入してください。")
